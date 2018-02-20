@@ -8,13 +8,6 @@ CertDir   ?= certificates
 CertGraph  = $(CertDir)/graph
 VPATH      = $(CertDir)
 
-#if FakeTimeCmd is not set than fail
-ifndef FakeTimeCmd
-  $(error FakeTimeCmd is not set)
-else
-  $(info FakeTimeCmd == '$(FakeTimeCmd)')
-endif
-
 SepLine = _____________________________________
 
 #########################################################################
@@ -44,8 +37,7 @@ define create_selfsigned_cert
   # extra opts : '$3'
   @echo "$(SepLine)\n"
   @$(TOOL_DIR)/create_cert_dir.sh "--$2" "$(CertDir)/$1"
-  @$(FakeTimeCmd) $(TOOL_DIR)/create_cert_req.sh --ss $3 "$(CertDir)/$1"
-  @$(FakeTimeCmd) $(TOOL_DIR)/create_pkcs12_cert.sh "$(CertDir)/$1"
+  @$(TOOL_DIR)/create_cert_req.sh --ss $3 "$(CertDir)/$1"
   @$(call add_cert,$1)
 endef
 
@@ -57,13 +49,12 @@ define create_ca_signed_cert
   # x509v3 ext.   : '$4'
   # extra CA opts : '$5'
   @echo "$(SepLine)\n"
-  @$(FakeTimeCmd) $(TOOL_DIR)/create_cert_dir.sh "--$2" "$(CertDir)/$1"
-  @$(FakeTimeCmd) $(TOOL_DIR)/create_cert_req.sh "$(CertDir)/$1"
-  @$(FakeTimeCmd) $(TOOL_DIR)/sign_cert.sh --ca  "$(CertDir)/$(notdir $3)" \
-                                           --req "$(CertDir)/$1"           \
-                                           --ext "$4"                      \
-                                           $5
-  @$(FakeTimeCmd) $(TOOL_DIR)/create_pkcs12_cert.sh "$(CertDir)/$1"
+  @$(TOOL_DIR)/create_cert_dir.sh "--$2" "$(CertDir)/$1"
+  @$(TOOL_DIR)/create_cert_req.sh "$(CertDir)/$1"
+  @$(TOOL_DIR)/sign_cert.sh --ca  "$(CertDir)/$(notdir $3)" \
+                            --req "$(CertDir)/$1"           \
+                            --ext "$4"                      \
+                            $5
   @$(call add_cert,$1,$3)
 endef
 
@@ -72,7 +63,7 @@ define revoke_cert
   # cert name     : '$1'
   # CA cert name  : '$2'
   @echo "$(SepLine)\n"
-  @$(FakeTimeCmd) $(TOOL_DIR)/generate_crl.sh --revoke "$(CertDir)/$1" "$(CertDir)/$(notdir $2)"
+  @$(TOOL_DIR)/generate_crl.sh --revoke "$(CertDir)/$1" "$(CertDir)/$(notdir $2)"
   $(call add_description,$1,\\n[revoked])
 endef
 
@@ -83,15 +74,15 @@ ifeq ($(OCSP),true)
     # ocsp uri  : '$2'
     @echo "$(SepLine)\n"
     $(call add_description,$1,\\n[ocsp $2])
-    @$(FakeTimeCmd) $(TOOL_DIR)/change_config.sh --cfg "$(CertDir)/$1/x509_ext.cfg" \
-                                                 --set authorityInfoAccess "OCSP;URI:http://$2"
-    @$(FakeTimeCmd) $(TOOL_DIR)/create_cert_dir.sh --user "$(CertDir)/$1/ocsp/"
-    @$(FakeTimeCmd) $(TOOL_DIR)/change_config.sh --cfg "$(CertDir)/$1/ocsp/openssl.cfg" \
-                                                 --set CN "$2"
-    @$(FakeTimeCmd) $(TOOL_DIR)/create_cert_req.sh "$(CertDir)/$1/ocsp/"
-    @$(FakeTimeCmd) $(TOOL_DIR)/sign_cert.sh --ca  "$(CertDir)/$1"      \
-                                             --req "$(CertDir)/$1/ocsp" \
-                                             --ext ocsp
+    @$(TOOL_DIR)/change_config.sh --cfg "$(CertDir)/$1/x509_ext.cfg" \
+                                  --set authorityInfoAccess "OCSP;URI:http://$2"
+    @$(TOOL_DIR)/create_cert_dir.sh --user "$(CertDir)/$1/ocsp/"
+    @$(TOOL_DIR)/change_config.sh --cfg "$(CertDir)/$1/ocsp/openssl.cfg" \
+                                  --set CN "$2"
+    @$(TOOL_DIR)/create_cert_req.sh "$(CertDir)/$1/ocsp/"
+    @$(TOOL_DIR)/sign_cert.sh --ca  "$(CertDir)/$1"      \
+                              --req "$(CertDir)/$1/ocsp" \
+                              --ext ocsp
   endef
 endif
 

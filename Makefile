@@ -1,5 +1,3 @@
-#optionally FakeTimeCmd can changed to faketime
-FakeTimeCmd ?= datefudge "-180days"
 
 include tools/tools.mk
 
@@ -74,7 +72,8 @@ ExpiredCerts = expired_intermediate_ca \
                expired_client          \
                expired_ca_client
 
-ExipedDates = -days 90
+#datetime format YYMMDDHHMMSSZ
+ExipedDates = -startdate 010101000000Z -enddate 010102000000Z
 
 .PHONY: expired
 
@@ -98,8 +97,7 @@ expired_ca_client: | expired_intermediate_ca
 ## selfsigned certificates
 #########################################################################
 SelfsignedCerts = selfsigned_server \
-                  selfsigned_client \
-                  selfsigned_expired_client
+                  selfsigned_client 
 
 .PHONY: selfsigned
 
@@ -113,10 +111,6 @@ selfsigned_server:
 
 selfsigned_client:
 	$(call create_selfsigned_cert,$@,user,--ext client)
-
-selfsigned_expired_client:
-	$(call create_selfsigned_cert,$@,user,--days 90 --ext client)
-	$(call add_description,$@,\\n[expired])
 
 #########################################################################
 ## unknown CA certificates
